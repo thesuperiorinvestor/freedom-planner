@@ -1,0 +1,11 @@
+# Netlify config for the weekly planner + its serverless review function.
+# Set the API key as an environment variable in the Netlify UI, never here:
+#   Site configuration → Environment variables → ANTHROPIC_API_KEY = sk-ant-...
+#   (optional) REVIEW_SHARED_SECRET = freedom-planner-review-7m
+
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

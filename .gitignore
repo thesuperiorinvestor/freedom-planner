@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# netlify
+.netlify/
+
+# env / secrets
+.env
+.env.*
+
+# os
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Planner</title>
+<style>
+  :root {
+    --bg: #f4f3f0;
+    --card: #ffffff;
+    --border: #e6e4df;
+    --border-strong: #d8d5ce;
+    --text: #2b2b29;
+    --muted: #8a8780;
+    --faint: #b6b3ac;
+    --accent: #5f807d;
+    --accent-soft: #e7efed;
+    --accent-ink: #2f4b48;
+    --progress: #3c9d63;
+    --progress-soft: #e3f1e8;
+    --progress-grad: linear-gradient(90deg, #74bd92, #2f9355);
+    --shadow: 0 2px 8px rgba(40, 38, 34, 0.05);
+    --shadow-lift: 0 6px 18px rgba(40, 38, 34, 0.09);
+    --radius: 14px;
+    --radius-sm: 9px;
+    --mono: "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg: #14140f;
+    --card: #1d1d18;
+    --border: #2e2e27;
+    --border-strong: #3a3a31;
+    --text: #e7e5df;
+    --muted: #918e85;
+    --faint: #6a675f;
+    --accent: #7aa39e;
+    --accent-soft: #25332f;
+    --accent-ink: #bcd6d1;
+    --progress: #6fc093;
+    --progress-soft: #213328;
+    --progress-grad: linear-gradient(90deg, #3f8d62, #79d39e);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 16px;
+    max-width: 1080px;
+    margin: 0 auto;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .title-block { margin-right: auto; }
+  h1 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--text);
+  }
+  .stats {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stats b { color: var(--accent); font-weight: 700; }
+
+  .nav { display: flex; align-items: center; gap: 6px; }
+  button {
+    font-family: var(--sans);
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    font-size: 13px;
+    transition: background 0.12s, border-color 0.12s, transform 0.05s;
+  }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: translateY(1px); }
+  .icon-btn { padding: 7px 11px; font-weight: 600; }
+  .week-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 132px;
+    text-align: center;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  .ghost:hover { background: var(--card); border-color: var(--border); color: var(--text); }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text);
+  }
+  .card-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .section { margin-bottom: 14px; }
+
+  /* ---------- Layout grid ---------- */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+    gap: 12px;
+  }
+
+  /* ---------- Long-term goals ---------- */
+  .lt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .lt-head {
+    display: flex; align-items: baseline; gap: 7px;
+    margin-bottom: 9px; padding-bottom: 7px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lt-tag {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px; color: var(--text);
+  }
+  .lt-period {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Progress bars ---------- */
+  .bar { height: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; background: var(--progress-grad); border-radius: 999px; transition: width 0.35s ease; }
+  .lt-bar { height: 5px; margin: -2px 0 11px; }
+  .goals-bar { height: 6px; margin: 2px 0 12px; }
+
+  /* ---------- Freedom number ---------- */
+  .freedom-fields { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .f-field { flex: 1; min-width: 140px; }
+  .f-label { display: block; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 5px; }
+  .f-input-wrap { display: flex; align-items: center; gap: 5px; border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-sm); padding: 7px 11px; transition: border-color 0.12s; }
+  .f-input-wrap:focus-within { border-color: var(--accent); }
+  .f-cur { color: var(--muted); font-family: var(--mono); font-size: 16px; font-weight: 600; }
+  .f-input { border: none; background: transparent; outline: none; font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text); width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+  .f-input-wrap.locked { background: var(--card); border-style: dashed; cursor: default; }
+  .f-static { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .lock-tag { font-size: 9px; letter-spacing: 0.5px; color: var(--faint); text-transform: none; }
+  .freedom-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 11px; font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .freedom-meta b { color: var(--progress); font-weight: 700; }
+  .freedom-quick { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+  .freedom-quick .add { max-width: 170px; }
+  .freedom-quick .hint { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+  .reached { color: var(--progress); font-weight: 700; }
+
+  /* ---------- Freedom milestone track ---------- */
+  .ms-track { position: relative; height: 50px; margin: 20px 28px 2px; }
+  .ms-line { position: absolute; top: 8px; left: 0; right: 0; height: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .ms-line-fill { height: 100%; width: 0; background: var(--progress-grad); border-radius: 999px; transition: width 0.4s ease; }
+  .ms-node { position: absolute; top: 3px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+  .ms-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--card); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; transition: background 0.2s, border-color 0.2s; }
+  .ms-dot.reached { background: var(--progress); border-color: var(--progress); }
+  .ms-dot.next { border-color: var(--progress); box-shadow: 0 0 0 3px var(--progress-soft); }
+  .ms-finish .ms-dot { width: 22px; height: 22px; border: none; background: transparent; font-size: 16px; }
+  .ms-label { margin-top: 7px; font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ms-node.reached .ms-label { color: var(--progress); font-weight: 600; }
+
+  /* ---------- Goals ---------- */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+  }
+  .check {
+    width: 18px; height: 18px;
+    border: 1.6px solid var(--border-strong);
+    border-radius: 5px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: transparent;
+    font-size: 12px; font-weight: 800;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .check:hover { border-color: var(--accent); }
+  .check.done {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  [data-theme="dark"] .check.done { color: #14140f; }
+  .row-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .row.done .row-text { text-decoration: line-through; color: var(--faint); }
+  .del {
+    opacity: 0;
+    border: none; background: transparent;
+    color: var(--faint);
+    font-size: 16px; line-height: 1;
+    padding: 2px 6px; border-radius: 6px;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .row:hover .del, .habit:hover .del { opacity: 1; }
+  .del:hover { background: var(--accent-soft); color: var(--accent-ink); }
+  .carried-tag { flex-shrink: 0; font-family: var(--mono); font-size: 10px; color: var(--faint); align-self: center; }
+
+  /* ---------- Daily Kill List ---------- */
+  .kill-date { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .kill-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 11px; }
+  .kill-vow { display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; }
+  .kill-vow.slipped { opacity: 0.6; }
+  .kill-ban { color: #d2685b; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .kill-text { flex: 1; font-size: 15px; font-weight: 600; color: var(--text); word-break: break-word; }
+  .kill-vow .del { opacity: 0.5; }
+  .kill-vow:hover .del { opacity: 1; }
+  .kill-acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .kill-btn { border-radius: var(--radius-sm); padding: 8px 13px; font-size: 13px; font-weight: 600; }
+  .kill-btn.held.on { background: var(--progress); border-color: var(--progress); color: #fff; }
+  .kill-btn.slip.on { background: #d2685b; border-color: #d2685b; color: #fff; }
+  [data-theme="dark"] .kill-btn.held.on { color: #14140f; }
+
+  .add-row { display: flex; gap: 8px; margin-top: 8px; }
+  input.add {
+    flex: 1;
+    font-family: var(--sans);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  input.add:focus { border-color: var(--accent); }
+  input.add::placeholder { color: var(--faint); }
+  .add-btn {
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border-color: transparent;
+  }
+  .add-btn:hover { border-color: var(--accent); }
+
+  /* ---------- Day cards ---------- */
+  .day-card .card-head { margin-bottom: 9px; }
+  .day-name { font-family: var(--mono); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+  .day-date { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .day-card.today { border-color: var(--accent); box-shadow: var(--shadow-lift); }
+  .day-card.today .day-name { color: var(--accent); }
+  .today-pill {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.5px;
+    background: var(--accent); color: #fff;
+    padding: 2px 6px; border-radius: 999px;
+    margin-left: 6px;
+  }
+  [data-theme="dark"] .today-pill { color: #14140f; }
+  .day-card .row { padding: 3px 0; }
+  .day-card .row-text { font-size: 13.5px; }
+  .day-card input.add { font-size: 12.5px; padding: 6px 9px; }
+  .notes {
+    width: 100%;
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 44px;
+    outline: none;
+  }
+  .notes:focus { border-color: var(--accent); }
+  .notes::placeholder { color: var(--faint); }
+  .empty { font-size: 12.5px; color: var(--faint); padding: 4px 0 2px; font-style: italic; }
+
+  /* ---------- Habit tracker ---------- */
+  .habit {
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .habit:first-of-type { border-top: none; padding-top: 2px; }
+  .habit-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .habit-name { font-size: 14px; font-weight: 600; flex: 1; word-break: break-word; }
+  .habit-stat {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .habit-stat b { color: var(--accent); }
+  .streak {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dot {
+    flex: 1;
+    min-width: 0;
+    aspect-ratio: 1 / 1;
+    max-width: 40px;
+    border: 1.6px solid var(--border-strong);
+    border-radius: 9px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    background: var(--card);
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+    user-select: none;
+  }
+  .dot:hover { border-color: var(--accent); }
+  .dot.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  [data-theme="dark"] .dot.on { color: #14140f; }
+  .dot.is-today { box-shadow: inset 0 0 0 1.6px var(--accent-soft); }
+  .dot .d-init { font-weight: 700; font-size: 10px; }
+  .dot .d-num { font-size: 9px; opacity: 0.7; margin-top: 1px; }
+
+  /* ---------- Footer / misc ---------- */
+  footer {
+    margin-top: 18px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--faint);
+  }
+  footer button { font-size: 11px; padding: 4px 9px; }
+
+  /* ---------- Cloud sync modal ---------- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,20,15,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+  .modal-overlay[hidden] { display: none; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; width: 100%; max-width: 430px; box-shadow: var(--shadow-lift); max-height: 90vh; overflow-y: auto; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .modal-text { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 12px; }
+  .modal-text a { color: var(--accent); }
+  .modal-text ol { margin: 8px 0 0; padding-left: 18px; }
+  .modal-text li { margin-bottom: 5px; }
+  .modal .add { width: 100%; margin-bottom: 8px; }
+  .modal textarea.add { min-height: 104px; resize: vertical; font-family: var(--mono); font-size: 11px; line-height: 1.4; }
+  .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .sync-msg { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 12px; min-height: 14px; word-break: break-word; }
+  .sync-ok { color: var(--progress); }
+  #syncBtn.on { color: var(--progress); border-color: var(--progress); }
+  .sync-status { margin-bottom: 7px; word-break: break-word; }
+  .sync-status.ok { color: var(--progress); }
+  .sync-status.err { color: #d2685b; }
+
+  /* ---------- Weekly review ---------- */
+  .review-modal { max-width: 560px; }
+  #reviewOutput { max-height: 56vh; overflow-y: auto; margin-bottom: 4px; }
+  .review-h { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin: 14px 0 6px; }
+  .review-p { font-size: 13.5px; line-height: 1.5; margin: 0 0 8px; color: var(--text); }
+  .review-ul { margin: 0 0 10px; padding-left: 18px; }
+  .review-ul li { font-size: 13.5px; line-height: 1.45; margin-bottom: 4px; color: var(--text); }
+  .review-ts { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 12px; }
+  .review-err { color: #d2685b; font-size: 13px; line-height: 1.5; }
+
+  @media (max-width: 560px) {
+    body { padding: 12px; }
+    .title-block { width: 100%; }
+    .nav { width: 100%; justify-content: space-between; }
+    .week-label { flex: 1; }
+    .day-grid { grid-template-columns: 1fr; }
+    .lt-grid { grid-template-columns: 1fr; gap: 14px; }
+    .ms-track { margin: 20px 16px 2px; }
+    .ms-label { font-size: 8.5px; }
+  }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body data-theme="light">
+
+<header>
+  <div class="title-block">
+    <h1 id="weekTitle">Week 24</h1>
+    <div class="stats" id="stats">— tasks · — habits today</div>
+  </div>
+  <div class="nav">
+    <button class="icon-btn ghost" id="prevWk" title="Previous week">←</button>
+    <span class="week-label" id="weekLabel">—</span>
+    <button class="icon-btn ghost" id="nextWk" title="Next week">→</button>
+    <button id="todayBtn">Today</button>
+    <button class="icon-btn ghost" id="themeBtn" title="Toggle theme">◐</button>
+    <button class="icon-btn ghost" id="reviewBtn" title="AI weekly review">🧠</button>
+    <button class="icon-btn ghost" id="syncBtn" title="Cloud sync">☁</button>
+  </div>
+</header>
+
+<!-- Daily Kill List -->
+<div class="card section">
+  <div class="card-head">
+    <span class="card-title">⛔ Daily Kill List</span>
+    <span class="kill-date" id="killDate"></span>
+    <span class="card-sub" id="killStreak"></span>
+  </div>
+  <div class="kill-sub">One thing I will <b>not</b> do today — written every morning, enforced ruthlessly.</div>
+  <div id="killBody"></div>
+</div>
+
+<!-- Freedom Number -->
+<div class="card section">
+  <div class="card-head">
+    <span class="card-title">💰 Freedom number</span>
+    <span class="card-sub" id="freedomPct"></span>
+  </div>
+  <div class="freedom-fields">
+    <div class="f-field">
+      <span class="f-label">Current</span>
+      <div class="f-input-wrap"><span class="f-cur">$</span><input class="f-input" id="freedomCurrent" inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="f-field">
+      <span class="f-label">Freedom target <span class="lock-tag">🔒 locked</span></span>
+      <div class="f-input-wrap locked"><span class="f-cur">$</span><span class="f-static" id="freedomTargetDisplay">7,000,000</span></div>
+    </div>
+  </div>
+  <div class="ms-track">
+    <div class="ms-line"><div class="ms-line-fill" id="freedomFill"></div></div>
+    <div class="ms-nodes" id="freedomNodes"></div>
+  </div>
+  <div class="freedom-meta">
+    <span id="freedomOf"></span>
+    <span id="freedomLeft"></span>
+  </div>
+  <div class="freedom-quick">
+    <input class="add" id="freedomAddInput" inputmode="decimal" placeholder="+ add deposit">
+    <button class="add-btn" id="freedomAddBtn">Add</button>
+    <span class="hint">adds to current</span>
+  </div>
+</div>
+
+<!-- Long-term Goals -->
+<div class="card section">
+  <div class="card-head">
+    <span class="card-title">🧭 Long-term goals</span>
+    <span class="card-sub">month · quarter · year</span>
+  </div>
+  <div class="lt-grid">
+    <div class="lt-col">
+      <div class="lt-head">
+        <span class="lt-tag">Monthly</span>
+        <span class="lt-period" id="monthHdr"></span>
+        <span class="card-sub" id="monthSub"></span>
+      </div>
+      <div class="bar lt-bar"><div class="bar-fill" id="monthBar"></div></div>
+      <div id="monthList"></div>
+      <div class="add-row">
+        <input class="add" id="monthInput" placeholder="+ monthly goal" maxlength="120">
+        <button class="add-btn" id="monthAdd">Add</button>
+      </div>
+    </div>
+    <div class="lt-col">
+      <div class="lt-head">
+        <span class="lt-tag">Quarterly</span>
+        <span class="lt-period" id="quarterHdr"></span>
+        <span class="card-sub" id="quarterSub"></span>
+      </div>
+      <div class="bar lt-bar"><div class="bar-fill" id="quarterBar"></div></div>
+      <div id="quarterList"></div>
+      <div class="add-row">
+        <input class="add" id="quarterInput" placeholder="+ quarterly goal" maxlength="120">
+        <button class="add-btn" id="quarterAdd">Add</button>
+      </div>
+    </div>
+    <div class="lt-col">
+      <div class="lt-head">
+        <span class="lt-tag">Annual</span>
+        <span class="lt-period" id="yearHdr"></span>
+        <span class="card-sub" id="yearSub"></span>
+      </div>
+      <div class="bar lt-bar"><div class="bar-fill" id="yearBar"></div></div>
+      <div id="yearList"></div>
+      <div class="add-row">
+        <input class="add" id="yearInput" placeholder="+ annual goal" maxlength="120">
+        <button class="add-btn" id="yearAdd">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Weekly Goals -->
+<div class="card section">
+  <div class="card-head">
+    <span class="card-title">🎯 Goals this week</span>
+    <span class="card-sub" id="goalsSub"></span>
+  </div>
+  <div class="bar goals-bar"><div class="bar-fill" id="goalsBar"></div></div>
+  <div id="goalsList"></div>
+  <div class="add-row">
+    <input class="add" id="goalInput" placeholder="Add a weekly goal or priority…" maxlength="120">
+    <button class="add-btn" id="goalAdd">Add</button>
+  </div>
+</div>
+
+<!-- Habit Tracker -->
+<div class="card section">
+  <div class="card-head">
+    <span class="card-title">📊 Consistency tracker</span>
+    <span class="card-sub" id="habitSub"></span>
+  </div>
+  <div id="habitList"></div>
+  <div class="add-row">
+    <input class="add" id="habitInput" placeholder="Add a habit to track (e.g. Run, Read, Meditate)…" maxlength="40">
+    <button class="add-btn" id="habitAdd">Add</button>
+  </div>
+</div>
+
+<!-- Days -->
+<div class="day-grid" id="dayGrid"></div>
+
+<footer>
+  <div class="sync-status" id="syncStatus">saved locally in this browser</div>
+  <button class="ghost" id="exportBtn">export backup</button>
+  <button class="ghost" id="importBtn">import</button>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+</footer>
+
+<!-- Weekly review modal -->
+<div class="modal-overlay" id="reviewModal" hidden>
+  <div class="modal review-modal">
+    <div class="modal-head">
+      <span class="card-title">🧠 Weekly review</span>
+      <button class="ghost icon-btn" id="reviewClose">✕</button>
+    </div>
+    <div class="modal-text" id="reviewMeta"></div>
+    <div id="reviewOutput"></div>
+    <div class="modal-actions">
+      <button class="add-btn" id="reviewRunBtn">Run weekly review</button>
+    </div>
+    <div class="sync-msg">Claude reviews the week you're currently viewing · ~3¢ each</div>
+  </div>
+</div>
+
+<!-- Cloud sync modal -->
+<div class="modal-overlay" id="syncModal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <span class="card-title">☁ Cloud sync</span>
+      <button class="ghost icon-btn" id="syncClose">✕</button>
+    </div>
+
+    <div id="syncStepConfig">
+      <div class="modal-text">
+        Sync across devices with a free Firebase project (one-time setup):
+        <ol>
+          <li>Open <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> → add a project.</li>
+          <li>Build → <b>Firestore Database</b> → create (Production mode).</li>
+          <li>Build → <b>Authentication</b> → Sign-in method → enable <b>Email/Password</b>.</li>
+          <li>Project settings → your apps → add a <b>Web app</b> → copy its <b>firebaseConfig</b> object and paste it below.</li>
+        </ol>
+      </div>
+      <textarea class="add" id="syncConfigInput" placeholder="Paste firebaseConfig here, e.g.&#10;{ apiKey: &quot;...&quot;, authDomain: &quot;...&quot;, projectId: &quot;...&quot;, ... }"></textarea>
+      <button class="add-btn" id="syncConnectBtn">Connect</button>
+    </div>
+
+    <div id="syncStepAuth" style="display:none">
+      <div class="modal-text">Sign in with the <b>same email &amp; password on every device</b> to share your data.</div>
+      <input class="add" id="syncEmail" type="email" autocomplete="username" placeholder="email">
+      <input class="add" id="syncPass" type="password" autocomplete="current-password" placeholder="password (6+ characters)">
+      <div class="modal-actions">
+        <button class="add-btn" id="syncSignInBtn">Sign in</button>
+        <button id="syncSignUpBtn">Create account</button>
+        <button class="ghost" id="syncForget">Change config</button>
+      </div>
+    </div>
+
+    <div id="syncStepOn" style="display:none">
+      <div class="modal-text">✓ <span class="sync-ok">Synced</span> as <b id="syncEmail2"></b>.<br>Changes save to the cloud automatically and appear on your other devices.</div>
+      <button id="syncSignOutBtn">Sign out</button>
+    </div>
+
+    <div class="sync-msg" id="syncMsg"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORE_KEY = "weeklyPlanner.v1";
+  const FREEDOM_MILESTONES = [10000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000, 7000000];
+  const FREEDOM_TARGET = FREEDOM_MILESTONES[FREEDOM_MILESTONES.length - 1];   // $7,000,000 — fixed, not editable
+  const REVIEW_ENDPOINT = "/.netlify/functions/review";
+  const REVIEW_KEY = "freedom-planner-review-7m";   // sent as x-review-key; only enforced if REVIEW_SHARED_SECRET env is set
+  const DAY_NAMES = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const DAY_ABBR  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const DAY_INIT  = ["M","T","W","T","F","S","S"];
+
+  // ---------- Money helpers ----------
+  const money = n => "$" + Math.round(n || 0).toLocaleString("en-US");
+  const parseMoney = s => { const n = parseFloat(String(s).replace(/[^0-9.]/g, "")); return (isNaN(n) || n < 0) ? 0 : n; };
+  const moneyShort = n => n >= 1e6 ? "$" + (n/1e6).toLocaleString("en-US", {maximumFractionDigits:1}) + "M"
+                        : n >= 1e3 ? "$" + (n/1e3).toLocaleString("en-US", {maximumFractionDigits:1}) + "K"
+                        : "$" + n;
+  // Map a dollar value to a position (0–100%) on the evenly-spaced milestone track
+  function milestonePos(v) {
+    const m = FREEDOM_MILESTONES, n = m.length, bounds = [0, ...m];
+    if (v <= 0) return 0;
+    if (v >= m[n-1]) return 100;
+    for (let s = 0; s < n; s++) {
+      if (v < bounds[s+1]) return ((s + (v - bounds[s]) / (bounds[s+1] - bounds[s])) / n) * 100;
+    }
+    return 100;
+  }
+
+  // ---------- Date helpers (local, DST-safe via date parts) ----------
+  const pad = n => String(n).padStart(2, "0");
+  const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+  function startOfWeek(d) {            // Monday as day 0
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const wd = (x.getDay() + 6) % 7;   // Sun=6 ... Mon=0
+    return addDays(x, -wd);
+  }
+  function isoWeekNum(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = (t.getUTCDay() + 6) % 7;
+    t.setUTCDate(t.getUTCDate() - day + 3);
+    const firstThu = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+    const fday = (firstThu.getUTCDay() + 6) % 7;
+    firstThu.setUTCDate(firstThu.getUTCDate() - fday + 3);
+    return 1 + Math.round((t - firstThu) / (7 * 864e5));
+  }
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const FULLMONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const fmtMD = d => `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+
+  // Period keys/labels are based on the Monday of the viewed week
+  const monthKey    = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  const quarterKey  = d => `${d.getFullYear()}-Q${Math.floor(d.getMonth()/3)+1}`;
+  const yearKey     = d => `${d.getFullYear()}`;
+  const monthLabel   = d => `${FULLMONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const quarterLabel = d => `Q${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}`;
+  const yearLabel    = d => `${d.getFullYear()}`;
+  // Previous-period keys (for auto-carrying unfinished goals into a new period)
+  const prevMonthKey   = d => monthKey(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const prevQuarterKey = d => quarterKey(new Date(d.getFullYear(), Math.floor(d.getMonth()/3)*3 - 3, 1));
+  const prevYearKey    = d => yearKey(new Date(d.getFullYear() - 1, 0, 1));
+
+  // ---------- State ----------
+  let state = load();
+  let viewWeek = startOfWeek(new Date());   // Date = Monday of viewed week
+
+  // Cloud sync runtime
+  const SYNC_KEY = "weeklyPlanner.sync";
+  const DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyArSPrYjW1nDwiCeh_kGPnOW-Mw4afnQsc",
+    authDomain: "freedom-planner-6fc3f.firebaseapp.com",
+    projectId: "freedom-planner-6fc3f",
+    storageBucket: "freedom-planner-6fc3f.firebasestorage.app",
+    messagingSenderId: "184452389204",
+    appId: "1:184452389204:web:043e7fef8a2fef1243d0c1",
+    measurementId: "G-NGMVFFCZFS"
+  };
+  let syncCfg = loadSyncCfg();
+  if (!syncCfg.config && DEFAULT_FIREBASE_CONFIG) syncCfg.config = DEFAULT_FIREBASE_CONFIG;
+  let fbApp = null, fbAuth = null, fbDb = null, fbUser = null, docUnsub = null;
+  let applyingRemote = false, cloudTimer = null, pendingRemote = null;
+  let cloudSynced = false;   // becomes true only after we've READ the cloud doc — guards against
+                             // a fresh/empty local copy overwriting cloud data before it loads
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) return migrate(JSON.parse(raw));
+    } catch (e) { console.warn("load failed", e); }
+    return { version: 1, theme: "light", habits: [], habitLog: {}, weeks: {}, months: {}, quarters: {}, years: {}, freedom: { current: 0, target: FREEDOM_TARGET } };
+  }
+  function migrate(s) {
+    s.version ??= 1;
+    s.theme ??= "light";
+    s.habits ??= [];
+    s.habitLog ??= {};
+    s.weeks ??= {};
+    s.months ??= {};
+    s.quarters ??= {};
+    s.years ??= {};
+    s.freedom ??= { current: 0, target: FREEDOM_TARGET };
+    s.freedom.current = parseMoney(s.freedom.current);
+    s.freedom.target = FREEDOM_TARGET;   // always enforce the locked target
+    return s;
+  }
+  let saveTimer = null;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+      catch (e) { console.warn("save failed", e); }
+    }, 120);
+    cloudPush();
+  }
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  // ---------- Week accessors ----------
+  function week(wk = viewWeek) {
+    const k = keyOf(wk);
+    if (!state.weeks[k]) {
+      state.weeks[k] = { goals: [], days: Array.from({length:7}, () => ({ tasks: [], notes: "", notDo: "", notDoHeld: null })) };
+    }
+    const w = state.weeks[k];
+    w.goals ??= [];
+    if (!Array.isArray(w.days) || w.days.length !== 7) {
+      w.days = Array.from({length:7}, (_,i) => (w.days && w.days[i]) || ({ tasks: [], notes: "", notDo: "", notDoHeld: null }));
+    }
+    return w;
+  }
+  function habitWeek(wk = viewWeek) {
+    const k = keyOf(wk);
+    state.habitLog[k] ??= {};
+    return state.habitLog[k];
+  }
+  // Seed a period's goals from the previous period's unfinished goals, but only the first
+  // time that period is opened (never re-seed an existing — even empty — array).
+  function periodGoals(map, key, prevKey) {
+    if (!map[key]) {
+      const prev = map[prevKey];
+      map[key] = prev ? prev.filter(g => !g.done).map(g => ({ id: uid(), text: g.text, done: false, carried: true })) : [];
+      if (map[key].length) save();
+    }
+    return map[key];
+  }
+  function monthGoals()   { return periodGoals(state.months,   monthKey(viewWeek),   prevMonthKey(viewWeek)); }
+  function quarterGoals() { return periodGoals(state.quarters, quarterKey(viewWeek), prevQuarterKey(viewWeek)); }
+  function yearGoals()    { return periodGoals(state.years,    yearKey(viewWeek),    prevYearKey(viewWeek)); }
+  function habitDoneOn(habitId, date) {
+    const wkStart = startOfWeek(date);
+    const log = state.habitLog[keyOf(wkStart)];
+    if (!log || !log[habitId]) return false;
+    const idx = (date.getDay() + 6) % 7;
+    return !!log[habitId][idx];
+  }
+  function habitTotal(habitId) {
+    let n = 0;
+    for (const k in state.habitLog) {
+      const arr = state.habitLog[k][habitId];
+      if (arr) for (const v of arr) if (v) n++;
+    }
+    return n;
+  }
+  function habitStreak(habitId) {   // consecutive days ending today (or yesterday)
+    const today = new Date();
+    let cur = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (!habitDoneOn(habitId, cur)) cur = addDays(cur, -1); // today not yet done shouldn't break streak
+    let n = 0;
+    for (let i = 0; i < 800; i++) {
+      if (habitDoneOn(habitId, cur)) { n++; cur = addDays(cur, -1); }
+      else break;
+    }
+    return n;
+  }
+
+  const isThisWeek = () => keyOf(viewWeek) === keyOf(startOfWeek(new Date()));
+  const todayIdx = () => isThisWeek() ? (new Date().getDay() + 6) % 7 : -1;
+
+  // ---------- Kill List (one not-to-do per day, always today) ----------
+  function todayRecord() {                          // today's day object, regardless of viewed week
+    const w = week(startOfWeek(new Date()));        // week() ensures days[] exist + defaults
+    return w.days[(new Date().getDay() + 6) % 7];
+  }
+  function killDoneOn(date) {
+    const w = state.weeks[keyOf(startOfWeek(date))];
+    const d = w && w.days && w.days[(date.getDay() + 6) % 7];
+    return !!(d && d.notDoHeld === true);
+  }
+  function killStreak() {                            // consecutive days HELD, ending today/yesterday
+    let cur = new Date(); cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate());
+    if (!killDoneOn(cur)) cur = addDays(cur, -1);    // an undecided today doesn't break the streak
+    let n = 0; for (let i = 0; i < 800 && killDoneOn(cur); i++) { n++; cur = addDays(cur, -1); }
+    return n;
+  }
+
+  // ---------- Rendering ----------
+  const $ = sel => document.querySelector(sel);
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  function setBar(barEl, pct) { if (barEl) barEl.style.width = Math.max(0, Math.min(100, pct)) + "%"; }
+
+  function render() {
+    document.body.dataset.theme = state.theme;
+    renderHeader();
+    renderKill();
+    renderFreedom();
+    renderLongTerm();
+    renderGoals();
+    renderHabits();
+    renderDays();
+  }
+
+  function renderFreedom() {
+    const f = state.freedom, m = FREEDOM_MILESTONES, n = m.length;
+    const curEl = $("#freedomCurrent");
+    if (document.activeElement !== curEl) curEl.value = f.current ? f.current.toLocaleString("en-US") : "";
+    $("#freedomTargetDisplay").textContent = f.target.toLocaleString("en-US");
+
+    const pct = (f.current / f.target) * 100;
+    $("#freedomPct").textContent = (pct >= 10 || pct === 0 ? Math.round(pct) : pct.toFixed(1)) + "%";
+    const reachedCount = m.filter(x => f.current >= x).length;
+    $("#freedomOf").innerHTML = `<b>${money(f.current)}</b> of ${money(f.target)} · ${reachedCount}/${n} milestones`;
+
+    // Evenly-spaced milestone track
+    setBar($("#freedomFill"), milestonePos(f.current));
+    const nextIdx = m.findIndex(x => f.current < x);
+    const nodes = $("#freedomNodes");
+    nodes.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const reached = f.current >= m[i];
+      const isFinish = i === n - 1;
+      const node = el("div", "ms-node" + (reached ? " reached" : "") + (isFinish ? " ms-finish" : ""));
+      node.style.left = ((i + 1) / n * 100) + "%";
+      const dot = el("div", "ms-dot" + (reached ? " reached" : "") + (i === nextIdx ? " next" : ""));
+      if (isFinish) dot.textContent = "🏁";
+      node.append(dot, el("div", "ms-label", moneyShort(m[i])));
+      nodes.appendChild(node);
+    }
+
+    if (f.current >= f.target) {
+      $("#freedomLeft").innerHTML = `<span class="reached">🎉 Freedom reached!</span>`;
+    } else {
+      $("#freedomLeft").textContent = `Next: ${moneyShort(m[nextIdx])} · ${money(m[nextIdx] - f.current)} to go`;
+    }
+  }
+
+  function renderKill() {
+    const rec = todayRecord();
+    const today = new Date();
+    $("#killDate").textContent = `${DAY_NAMES[(today.getDay() + 6) % 7]} · ${fmtMD(today)}`;
+    $("#killStreak").textContent = `🔥 ${killStreak()}d held`;
+    const body = $("#killBody");
+    body.innerHTML = "";
+
+    if (!rec.notDo) {
+      const row = el("div", "add-row");
+      const inp = el("input", "add");
+      inp.placeholder = "The one thing I will NOT do today…";
+      inp.maxLength = 120;
+      const commit = () => { const v = inp.value.trim(); if (!v) return; rec.notDo = v; rec.notDoHeld = null; save(); renderKill(); };
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") commit(); });
+      const btn = el("button", "add-btn", "Set");
+      btn.onclick = commit;
+      row.append(inp, btn);
+      body.appendChild(row);
+      return;
+    }
+
+    const vow = el("div", "kill-vow" + (rec.notDoHeld === false ? " slipped" : ""));
+    vow.append(el("span", "kill-ban", "✕"), el("span", "kill-text", rec.notDo));
+    const clear = el("button", "del", "×");
+    clear.title = "Clear today's vow";
+    clear.onclick = () => { rec.notDo = ""; rec.notDoHeld = null; save(); renderKill(); };
+    vow.appendChild(clear);
+    body.appendChild(vow);
+
+    const acts = el("div", "kill-acts");
+    const held = el("button", "kill-btn held" + (rec.notDoHeld === true ? " on" : ""), "✅ Held the line");
+    held.onclick = () => { rec.notDoHeld = rec.notDoHeld === true ? null : true; save(); renderKill(); };
+    const slip = el("button", "kill-btn slip" + (rec.notDoHeld === false ? " on" : ""), "❌ Slipped");
+    slip.onclick = () => { rec.notDoHeld = rec.notDoHeld === false ? null : false; save(); renderKill(); };
+    acts.append(held, slip);
+    body.appendChild(acts);
+  }
+
+  function renderHeader() {
+    const wkNum = isoWeekNum(viewWeek);
+    const end = addDays(viewWeek, 6);
+    $("#weekTitle").textContent = `Week ${wkNum}`;
+    $("#weekLabel").textContent = `${fmtMD(viewWeek)} – ${fmtMD(end)}`;
+
+    const w = week();
+    let tDone = 0, tTot = 0;
+    for (const day of w.days) for (const t of day.tasks) { tTot++; if (t.done) tDone++; }
+    const ti = todayIdx();
+    let hDone = 0;
+    const hlog = habitWeek();
+    if (ti >= 0) for (const h of state.habits) if (hlog[h.id] && hlog[h.id][ti]) hDone++;
+    const habitTxt = ti >= 0
+      ? `<b>${hDone}/${state.habits.length||0}</b> habits today`
+      : `${state.habits.length} habits tracked`;
+    $("#stats").innerHTML = `<b>${tDone}/${tTot}</b> tasks · ${habitTxt}`;
+  }
+
+  function fillGoals(listEl, arr, subEl, emptyText, rerender, barEl) {
+    listEl.innerHTML = "";
+    const done = arr.filter(g => g.done).length;
+    if (subEl) subEl.textContent = arr.length ? `${done}/${arr.length}` : "";
+    if (barEl) setBar(barEl, arr.length ? (done / arr.length) * 100 : 0);
+    if (!arr.length) { listEl.appendChild(el("div", "empty", emptyText)); return; }
+    for (const g of arr) {
+      const row = el("div", "row" + (g.done ? " done" : ""));
+      const chk = el("div", "check" + (g.done ? " done" : ""), g.done ? "✓" : "");
+      chk.onclick = () => { g.done = !g.done; save(); rerender(); };
+      const txt = el("div", "row-text", g.text);
+      const del = el("button", "del", "×");
+      del.title = "Delete";
+      del.onclick = () => { const i = arr.indexOf(g); if (i > -1) arr.splice(i, 1); save(); rerender(); };
+      row.append(chk, txt);
+      if (g.carried && !g.done) {
+        const tag = el("span", "carried-tag", "↪");
+        tag.title = "Carried over from the previous period";
+        row.appendChild(tag);
+      }
+      row.appendChild(del);
+      listEl.appendChild(row);
+    }
+  }
+
+  function renderGoals() {
+    fillGoals($("#goalsList"), week().goals, $("#goalsSub"), "No goals set for this week yet.", renderGoals, $("#goalsBar"));
+  }
+
+  function renderLongTerm() {
+    $("#monthHdr").textContent   = monthLabel(viewWeek);
+    $("#quarterHdr").textContent = quarterLabel(viewWeek);
+    $("#yearHdr").textContent    = yearLabel(viewWeek);
+    fillGoals($("#monthList"),   monthGoals(),   $("#monthSub"),   "No monthly goals yet.",   renderLongTerm, $("#monthBar"));
+    fillGoals($("#quarterList"), quarterGoals(), $("#quarterSub"), "No quarterly goals yet.", renderLongTerm, $("#quarterBar"));
+    fillGoals($("#yearList"),    yearGoals(),    $("#yearSub"),    "No annual goals yet.",    renderLongTerm, $("#yearBar"));
+  }
+
+  function renderHabits() {
+    const list = $("#habitList");
+    list.innerHTML = "";
+    const hlog = habitWeek();
+    const ti = todayIdx();
+    $("#habitSub").textContent = state.habits.length ? `${state.habits.length} tracked` : "";
+    if (!state.habits.length) {
+      list.appendChild(el("div", "empty", "Add a habit below to start building a streak."));
+      return;
+    }
+    for (const h of state.habits) {
+      const arr = (hlog[h.id] ??= [false,false,false,false,false,false,false]);
+      const wkCount = arr.filter(Boolean).length;
+      const streak = habitStreak(h.id);
+      const total = habitTotal(h.id);
+
+      const wrap = el("div", "habit");
+      const top = el("div", "habit-top");
+      const name = el("div", "habit-name", h.name);
+      const stat = el("div", "habit-stat");
+      stat.innerHTML = `<b>${wkCount}</b>/7 wk · ${total} total`;
+      const streakPill = el("div", "streak", `🔥 ${streak}d`);
+      const del = el("button", "del", "×");
+      del.title = "Remove habit";
+      del.onclick = () => {
+        if (!confirm(`Remove "${h.name}" and its history?`)) return;
+        state.habits = state.habits.filter(x => x !== h);
+        for (const k in state.habitLog) delete state.habitLog[k][h.id];
+        save(); render();
+      };
+      top.append(name, streakPill, stat, del);
+
+      const dots = el("div", "dots");
+      for (let i = 0; i < 7; i++) {
+        const dot = el("div", "dot" + (arr[i] ? " on" : "") + (i === ti ? " is-today" : ""));
+        dot.append(el("span", "d-init", DAY_INIT[i]));
+        dot.append(el("span", "d-num", String(addDays(viewWeek, i).getDate())));
+        dot.onclick = () => { arr[i] = !arr[i]; save(); renderHabits(); renderHeader(); };
+        dots.appendChild(dot);
+      }
+      wrap.append(top, dots);
+      list.appendChild(wrap);
+    }
+  }
+
+  function renderDays() {
+    const w = week();
+    const grid = $("#dayGrid");
+    grid.innerHTML = "";
+    const ti = todayIdx();
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(viewWeek, i);
+      const day = w.days[i];
+      const isToday = i === ti;
+      const card = el("div", "card day-card" + (isToday ? " today" : ""));
+
+      const head = el("div", "card-head");
+      const nm = el("span", "day-name", DAY_ABBR[i]);
+      head.appendChild(nm);
+      if (isToday) head.appendChild(el("span", "today-pill", "TODAY"));
+      head.appendChild(el("span", "day-date", fmtMD(date)));
+      card.appendChild(head);
+
+      if (!day.tasks.length) card.appendChild(el("div", "empty", "No tasks."));
+      for (const t of day.tasks) {
+        const row = el("div", "row" + (t.done ? " done" : ""));
+        const chk = el("div", "check" + (t.done ? " done" : ""), t.done ? "✓" : "");
+        chk.onclick = () => { t.done = !t.done; save(); renderDays(); renderHeader(); };
+        const txt = el("div", "row-text", t.text);
+        const del = el("button", "del", "×");
+        del.onclick = () => { day.tasks = day.tasks.filter(x => x !== t); save(); renderDays(); renderHeader(); };
+        row.append(chk, txt, del);
+        card.appendChild(row);
+      }
+
+      const addRow = el("div", "add-row");
+      const inp = el("input", "add");
+      inp.placeholder = "+ task";
+      inp.maxLength = 120;
+      const commit = () => {
+        const v = inp.value.trim();
+        if (!v) return;
+        day.tasks.push({ id: uid(), text: v, done: false });
+        inp.value = "";
+        save(); renderDays(); renderHeader();
+        // refocus the new card's input
+        const cards = grid.querySelectorAll(".day-card");
+        const fresh = cards[i] && cards[i].querySelector("input.add");
+        if (fresh) fresh.focus();
+      };
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") commit(); });
+      addRow.appendChild(inp);
+      card.appendChild(addRow);
+
+      const notes = el("textarea", "notes");
+      notes.placeholder = "Notes…";
+      notes.value = day.notes || "";
+      notes.addEventListener("input", () => { day.notes = notes.value; save(); });
+      card.appendChild(notes);
+
+      grid.appendChild(card);
+    }
+  }
+
+  // ---------- AI Weekly Review ----------
+  let reviewBusy = false;
+
+  function buildReviewSummary() {
+    const w = week();
+    const f = state.freedom, m = FREEDOM_MILESTONES, n = m.length;
+    const reached = m.filter(x => f.current >= x).length;
+    const nextIdx = m.findIndex(x => f.current < x);
+    const goalsSummary = arr => ({ done: arr.filter(g => g.done).length, total: arr.length, items: arr.map(g => ({ text: g.text, done: !!g.done })) });
+    const days = w.days.map((d, i) => ({
+      day: DAY_ABBR[i],
+      date: fmtMD(addDays(viewWeek, i)),
+      tasksDone: d.tasks.filter(t => t.done).length,
+      tasksTotal: d.tasks.length,
+      undone: d.tasks.filter(t => !t.done).map(t => t.text),
+      notDo: d.notDo || "",
+      notDoHeld: d.notDoHeld ?? null,
+      notes: (d.notes || "").trim()
+    }));
+    return {
+      weekOf: `${fmtMD(viewWeek)} – ${fmtMD(addDays(viewWeek, 6))}`,
+      freedom: {
+        current: f.current, target: f.target,
+        pctOfTarget: +(f.current / f.target * 100).toFixed(1),
+        milestonesReached: `${reached}/${n}`,
+        nextMilestone: nextIdx === -1 ? "all reached" : moneyShort(m[nextIdx]),
+        toNextMilestone: nextIdx === -1 ? 0 : m[nextIdx] - f.current
+      },
+      weeklyGoals: goalsSummary(w.goals),
+      monthly:   { period: monthLabel(viewWeek),   ...goalsSummary(monthGoals()) },
+      quarterly: { period: quarterLabel(viewWeek), ...goalsSummary(quarterGoals()) },
+      annual:    { period: yearLabel(viewWeek),    ...goalsSummary(yearGoals()) },
+      habits: state.habits.map(h => {
+        const arr = habitWeek()[h.id] || [];
+        return { name: h.name, thisWeek: `${arr.filter(Boolean).length}/7`, streakDays: habitStreak(h.id), totalDays: habitTotal(h.id) };
+      }),
+      killList: { streakDaysHeld: killStreak(), byDay: days.map(d => ({ day: d.day, notDo: d.notDo, held: d.notDoHeld })) },
+      days
+    };
+  }
+
+  function mdToHtml(md) {
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    let html = "", inList = false;
+    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    for (const raw of md.split("\n")) {
+      const line = raw.trim();
+      if (!line) { closeList(); continue; }
+      if (/^#{1,6}\s/.test(line)) { closeList(); html += `<h4 class="review-h">${inline(line.replace(/^#{1,6}\s/, ""))}</h4>`; }
+      else if (/^[-*]\s/.test(line)) { if (!inList) { html += '<ul class="review-ul">'; inList = true; } html += `<li>${inline(line.replace(/^[-*]\s/, ""))}</li>`; }
+      else { closeList(); html += `<p class="review-p">${inline(line)}</p>`; }
+    }
+    closeList();
+    return html;
+  }
+
+  function showReview() {
+    const r = week().review;
+    $("#reviewMeta").textContent = `Week of ${fmtMD(viewWeek)} – ${fmtMD(addDays(viewWeek, 6))}`;
+    const out = $("#reviewOutput");
+    out.innerHTML = "";
+    if (r && r.text) {
+      out.innerHTML = mdToHtml(r.text);
+      out.appendChild(el("div", "review-ts", "Generated " + new Date(r.ts).toLocaleString()));
+    } else {
+      out.appendChild(el("div", "empty", "No review yet for this week. Tap “Run weekly review” to generate one."));
+    }
+  }
+
+  async function runWeeklyReview() {
+    if (reviewBusy) return;
+    reviewBusy = true;
+    const btn = $("#reviewRunBtn"), out = $("#reviewOutput");
+    btn.disabled = true; btn.textContent = "Reviewing…";
+    out.innerHTML = '<div class="empty">Analyzing your week…</div>';
+    try {
+      if (!fbUser) throw new Error("Sign in with the ☁ button first, then run the review.");
+      const idToken = await fbUser.getIdToken();
+      const res = await fetch(REVIEW_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json", "authorization": "Bearer " + idToken, "x-review-key": REVIEW_KEY },
+        body: JSON.stringify({ summary: buildReviewSummary() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ? data.error + (data.detail ? " — " + data.detail : "") : "HTTP " + res.status);
+      const text = (data.review || "").trim();
+      if (!text) throw new Error("Empty review returned.");
+      week().review = { text, ts: Date.now() };
+      save();
+      showReview();
+    } catch (e) {
+      out.innerHTML = "";
+      out.appendChild(el("div", "review-err", "Couldn't generate the review: " + e.message));
+    } finally {
+      reviewBusy = false; btn.disabled = false; btn.textContent = "Run weekly review";
+    }
+  }
+
+  // ---------- Cloud sync (Firebase) ----------
+  function loadSyncCfg() {
+    try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveSyncCfg() {
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncCfg)); } catch (e) {}
+  }
+  const syncAvailable = () => typeof firebase !== "undefined" && !!firebase.initializeApp;
+  function syncMsg(t, ok) {
+    const m = $("#syncMsg");
+    if (m) { m.textContent = t || ""; m.classList.toggle("sync-ok", !!ok); }
+  }
+  function setSyncStatus(text, kind) {
+    const e = $("#syncStatus");
+    if (!e) return;
+    e.textContent = text;
+    e.classList.remove("ok", "err");
+    if (kind) e.classList.add(kind);
+  }
+
+  function initFirebase() {
+    if (!syncCfg.config) return false;
+    if (!syncAvailable()) { syncMsg("Couldn't load Firebase — are you online?"); setSyncStatus("Cloud sync offline — Firebase didn't load (check connection)", "err"); return false; }
+    if (fbApp) return true;
+    try {
+      fbApp = firebase.initializeApp(syncCfg.config);
+      fbAuth = firebase.auth();
+      fbDb = firebase.firestore();
+      try { fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
+      fbAuth.onAuthStateChanged(u => {
+        fbUser = u;
+        if (u) { setSyncStatus("Connecting to cloud…"); startDocListener(u.uid); }
+        else { if (docUnsub) { docUnsub(); docUnsub = null; } cloudSynced = false; setSyncStatus("Not signed in — tap ☁ to sign in & sync"); }
+        updateSyncUI();
+      });
+      return true;
+    } catch (e) {
+      console.warn("firebase init failed", e);
+      syncMsg("Config error: " + e.message);
+      return false;
+    }
+  }
+
+  function startDocListener(accountUid) {
+    if (docUnsub) docUnsub();
+    cloudSynced = false;   // re-gate until we've read this account's cloud doc
+    const ref = fbDb.collection("planners").doc(accountUid);
+    docUnsub = ref.onSnapshot(snap => {
+      if (snap.metadata.hasPendingWrites) return;          // ignore our own write echoing back
+      if (snap.metadata.fromCache && !snap.exists) return; // empty local cache before the server replies — wait
+      if (!snap.exists) {                                  // server confirms no doc → genuinely new account, seed from local
+        cloudSynced = true; cloudPush(true); return;
+      }
+      const data = snap.data();
+      if (data && data.state) applyRemoteState(data.state);
+      cloudSynced = true;                                  // safe to write to cloud now that we've read it
+      setSyncStatus("Cloud synced ✓" + (fbUser && fbUser.email ? " · " + fbUser.email : ""), "ok");
+      updateSyncUI();
+    }, err => { console.error("snapshot error", err); syncMsg("Sync error: " + err.message); setSyncStatus("Sync error: " + err.message, "err"); });
+  }
+
+  function applyRemoteState(remote) {
+    // Don't clobber the field the user is mid-edit; apply once they finish.
+    const ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName)) { pendingRemote = remote; return; }
+    applyingRemote = true;
+    try {
+      state = migrate(remote);
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      render();
+    } finally { applyingRemote = false; pendingRemote = null; }
+  }
+
+  function cloudPush(immediate) {
+    if (!fbUser || !fbDb || applyingRemote || !cloudSynced) return;  // never write before we've read the cloud doc
+    clearTimeout(cloudTimer);
+    const write = () => {
+      fbDb.collection("planners").doc(fbUser.uid).set({
+        state: state,
+        _updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => { syncMsg("Synced ✓", true); setSyncStatus("Cloud synced ✓" + (fbUser.email ? " · " + fbUser.email : ""), "ok"); })
+        .catch(e => { console.error("cloud write failed", e); syncMsg("Save failed: " + e.message); setSyncStatus("Sync failed: " + e.message, "err"); });
+    };
+    if (immediate) write(); else cloudTimer = setTimeout(write, 700);
+  }
+
+  // Pull just the { ... } config object out of a pasted snippet (handles imports / init code around it)
+  function extractConfigObject(text) {
+    const anchor = text.indexOf("firebaseConfig");
+    let start = text.indexOf("{", anchor === -1 ? 0 : anchor);
+    if (start === -1) throw new Error("no config object found");
+    let depth = 0;
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}") { depth--; if (depth === 0) return text.slice(start, i + 1); }
+    }
+    throw new Error("unbalanced braces in config");
+  }
+
+  function syncConnect() {
+    const txt = $("#syncConfigInput").value.trim();
+    if (!txt) { syncMsg("Paste your firebaseConfig first."); return; }
+    let cfg;
+    try {
+      cfg = (new Function("return (" + extractConfigObject(txt) + ")"))();
+      if (!cfg || !cfg.apiKey || !cfg.projectId) throw new Error("missing apiKey / projectId");
+    } catch (e) { syncMsg("Couldn't read that config: " + e.message); return; }
+    syncCfg.config = cfg; saveSyncCfg();
+    if (initFirebase()) syncMsg("Connected. Now create an account or sign in.", true);
+    updateSyncUI();
+  }
+
+  function syncAuth(create) {
+    if (!initFirebase()) return;
+    const email = $("#syncEmail").value.trim();
+    const pass = $("#syncPass").value;
+    if (!email || !pass) { syncMsg("Enter email and password."); return; }
+    syncMsg(create ? "Creating account…" : "Signing in…");
+    const p = create ? fbAuth.createUserWithEmailAndPassword(email, pass)
+                     : fbAuth.signInWithEmailAndPassword(email, pass);
+    p.then(() => { $("#syncPass").value = ""; syncMsg("Signed in ✓", true); })
+     .catch(e => syncMsg(e.message));
+  }
+
+  function updateSyncUI() {
+    const configured = !!syncCfg.config, signedIn = !!fbUser;
+    const btn = $("#syncBtn");
+    if (btn) {
+      btn.classList.toggle("on", signedIn);
+      btn.title = signedIn ? ("Synced — " + (fbUser.email || "signed in"))
+                : configured ? "Cloud sync — sign in" : "Set up cloud sync";
+    }
+    const show = (id, on) => { const e = $(id); if (e) e.style.display = on ? "block" : "none"; };
+    show("#syncStepConfig", !configured);
+    show("#syncStepAuth", configured && !signedIn);
+    show("#syncStepOn", signedIn);
+    if (signedIn) { const e2 = $("#syncEmail2"); if (e2) e2.textContent = fbUser.email || "(signed in)"; }
+  }
+
+  function openSyncModal() { $("#syncModal").hidden = false; syncMsg(""); updateSyncUI(); }
+  function closeSyncModal() { $("#syncModal").hidden = true; }
+
+  // ---------- Add handlers ----------
+  function addTo(arr, inp, rerender) {
+    const v = inp.value.trim();
+    if (!v) return;
+    arr.push({ id: uid(), text: v, done: false });
+    inp.value = "";
+    save(); rerender(); inp.focus();
+  }
+  function wireGoalAdd(btnId, inpId, getArr, rerender) {
+    const inp = $("#" + inpId);
+    const commit = () => addTo(getArr(), inp, rerender);
+    $("#" + btnId).onclick = commit;
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") commit(); });
+  }
+  function addHabit() {
+    const inp = $("#habitInput");
+    const v = inp.value.trim();
+    if (!v) return;
+    state.habits.push({ id: uid(), name: v });
+    inp.value = "";
+    save(); renderHabits(); renderHeader(); inp.focus();
+  }
+
+  wireGoalAdd("goalAdd",    "goalInput",    () => week().goals, renderGoals);
+  wireGoalAdd("monthAdd",   "monthInput",   monthGoals,   renderLongTerm);
+  wireGoalAdd("quarterAdd", "quarterInput", quarterGoals, renderLongTerm);
+  wireGoalAdd("yearAdd",    "yearInput",    yearGoals,    renderLongTerm);
+  $("#habitAdd").onclick = addHabit;
+  $("#habitInput").addEventListener("keydown", e => { if (e.key === "Enter") addHabit(); });
+
+  // Freedom number fields
+  function bindMoneyField(elm, key) {
+    elm.addEventListener("input", () => { state.freedom[key] = parseMoney(elm.value); save(); renderFreedom(); });
+    elm.addEventListener("focus", () => { const v = state.freedom[key]; elm.value = v ? String(v) : ""; });
+    elm.addEventListener("blur", () => { const v = state.freedom[key]; elm.value = v ? v.toLocaleString("en-US") : ""; });
+  }
+  bindMoneyField($("#freedomCurrent"), "current");
+  function addDeposit() {
+    const amt = parseMoney($("#freedomAddInput").value);
+    if (!amt) return;
+    state.freedom.current = parseMoney(state.freedom.current) + amt;
+    $("#freedomAddInput").value = "";
+    save(); renderFreedom();
+  }
+  $("#freedomAddBtn").onclick = addDeposit;
+  $("#freedomAddInput").addEventListener("keydown", e => { if (e.key === "Enter") addDeposit(); });
+
+  // Weekly review controls
+  $("#reviewBtn").onclick = () => { $("#reviewModal").hidden = false; showReview(); };
+  $("#reviewClose").onclick = () => { $("#reviewModal").hidden = true; };
+  $("#reviewModal").addEventListener("click", e => { if (e.target.id === "reviewModal") $("#reviewModal").hidden = true; });
+  $("#reviewRunBtn").onclick = runWeeklyReview;
+
+  // Cloud sync controls
+  $("#syncBtn").onclick = openSyncModal;
+  $("#syncClose").onclick = closeSyncModal;
+  $("#syncModal").addEventListener("click", e => { if (e.target.id === "syncModal") closeSyncModal(); });
+  $("#syncConnectBtn").onclick = syncConnect;
+  $("#syncSignInBtn").onclick = () => syncAuth(false);
+  $("#syncSignUpBtn").onclick = () => syncAuth(true);
+  $("#syncSignOutBtn").onclick = () => { if (fbAuth) fbAuth.signOut(); syncMsg("Signed out."); };
+  $("#syncForget").onclick = () => {
+    if (!confirm("Forget the saved Firebase config on this device? Your cloud data stays safe.")) return;
+    if (fbAuth) fbAuth.signOut();
+    syncCfg = {}; saveSyncCfg();
+    syncMsg("Config cleared."); updateSyncUI();
+  };
+  $("#syncPass").addEventListener("keydown", e => { if (e.key === "Enter") syncAuth(false); });
+  // Apply a deferred remote update once the user stops editing
+  document.addEventListener("focusout", () => {
+    setTimeout(() => {
+      if (pendingRemote && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) applyRemoteState(pendingRemote);
+    }, 60);
+  });
+
+  $("#prevWk").onclick = () => { viewWeek = addDays(viewWeek, -7); render(); };
+  $("#nextWk").onclick = () => { viewWeek = addDays(viewWeek, 7); render(); };
+  $("#todayBtn").onclick = () => { viewWeek = startOfWeek(new Date()); render(); };
+  $("#themeBtn").onclick = () => { state.theme = state.theme === "dark" ? "light" : "dark"; save(); render(); };
+
+  // ---------- Export / Import ----------
+  $("#exportBtn").onclick = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `weekly-planner-${keyOf(new Date())}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $("#importBtn").onclick = () => $("#importFile").click();
+  $("#importFile").onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = migrate(JSON.parse(reader.result));
+        if (!data.weeks || !data.habits) throw new Error("bad file");
+        if (!confirm("Replace all current planner data with this backup?")) return;
+        state = data;
+        save(); render();
+      } catch (err) { alert("Could not import: " + err.message); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // Keyboard: left/right arrows to change weeks when not typing
+  document.addEventListener("keydown", e => {
+    if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+    if (e.key === "ArrowLeft") { viewWeek = addDays(viewWeek, -7); render(); }
+    else if (e.key === "ArrowRight") { viewWeek = addDays(viewWeek, 7); render(); }
+  });
+
+  render();
+  if (syncCfg.config) { setSyncStatus("Connecting to cloud…"); initFirebase(); }
+  else setSyncStatus("Saving locally on this device · set up ☁ to sync across devices");
+  updateSyncUI();
+})();
+</script>
+</body>
+</html>
