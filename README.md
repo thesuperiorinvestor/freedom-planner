@@ -4,8 +4,8 @@ A self-contained personal planning web app: weekly tasks, layered long-term goal
 lifetime "Freedom Number" milestone tracker, and an **AI weekly review** powered by Claude. One HTML
 file, vanilla JavaScript, no build step — with optional cross-device cloud sync.
 
-> Built end-to-end with **Claude Code**. Front end is a single hand-tuned HTML/JS file; the AI review
-> runs on a **Netlify serverless function** so the API key never touches the browser.
+> A single hand-tuned HTML/JS file, designed and built end-to-end; the AI review runs on a
+> **Netlify serverless function** so the API key never touches the browser.
 
 **Live:** deployed on Netlify · **Cloud sync:** Firebase (Firestore + Email/Password auth)
 
